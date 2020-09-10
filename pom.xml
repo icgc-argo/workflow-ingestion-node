@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>org.icgc_argo</groupId>
 	<artifactId>workflow-ingestion-node</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>workflow-ingestion-node</name>
 	<description>workflow-ingestion-node</description>
 
