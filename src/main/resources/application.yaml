@@ -1,0 +1,23 @@
+server:
+  port : 8082
+
+spring:
+  # Rabbitmq config
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: user
+    password: pass
+
+  # Kafka broker config
+  cloud.stream.kafka.binder.brokers: localhost:9092
+
+  # stream channel config
+  cloud.stream.bindings:
+      inbound:
+        group: publish
+        destination: published # kafka topic to listen to
+        binder: kafka
+      outbound:
+        destination: start # rabbitmq exchange/topic to send messages to
+        binder: rabbit
