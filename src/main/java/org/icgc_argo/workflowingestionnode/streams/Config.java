@@ -29,7 +29,7 @@ import org.springframework.messaging.Message;
 @EnableBinding(Channels.class)
 @Slf4j
 public class Config {
-    private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_alignment";
+    private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
 
     @Filter(inputChannel = Channels.INPUT, outputChannel = Channels.OUTPUT)
     public boolean analysisPublishEventToStartQueue(Message<AnalysisPublishEvent> message) {
