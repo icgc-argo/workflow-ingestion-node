@@ -19,6 +19,7 @@
 package org.icgc_argo.workflowingestionnode.streams;
 
 import java.util.function.Function;
+
 import org.icgc_argo.workflowingestionnode.model.AnalysisPublishEvent;
 import org.icgc_argo.workflowingestionnode.model.NodeEvent;
 import org.icgc_argo.workflowingestionnode.rdpc.RdpcService;
