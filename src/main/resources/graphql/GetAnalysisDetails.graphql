@@ -1,0 +1,12 @@
+query GetAnalysisDetails($analysisId: String!) {
+    analyses(filter: {analysisId: $analysisId}) {
+        analysisId
+        studyId
+        analysisType
+        analysisState
+        experiment
+        donors{
+          donorId
+        }
+  }
+}

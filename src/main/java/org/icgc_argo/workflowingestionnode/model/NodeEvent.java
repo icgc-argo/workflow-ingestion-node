@@ -16,20 +16,15 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc_argo.workflowingestionnode.streams;
+package org.icgc_argo.workflowingestionnode.model;
 
-import org.springframework.cloud.stream.annotation.Input;
-import org.springframework.cloud.stream.annotation.Output;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.SubscribableChannel;
+import java.util.List;
+import lombok.Value;
 
-public interface Channels {
-    String INPUT = "inbound";
-    String OUTPUT = "outbound";
-
-    @Input(INPUT)
-    SubscribableChannel analysisPublishEvents();
-
-    @Output(OUTPUT)
-    MessageChannel startQueue();
+@Value
+public class NodeEvent {
+  String analysisId;
+  String studyId;
+  String experimentalStrategy;
+  List<String> donorIds;
 }

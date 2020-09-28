@@ -7,16 +7,12 @@ services:
       - "2181:2181"
   broker:
     image: wurstmeister/kafka:2.13-2.6.0
-#    hostname: broker
-#    container_name: broker
     depends_on:
       - zookeeper
     ports:
-      # - "29092:29092"
       - "9092:9092"
     environment:
       KAFKA_ADVERTISED_HOST_NAME: localhost
-      KAFKA_CREATE_TOPICS: "published"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

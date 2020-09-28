@@ -18,25 +18,37 @@
 
 package org.icgc_argo.workflowingestionnode.streams;
 
-
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import java.util.function.Function;
 import org.icgc_argo.workflowingestionnode.model.AnalysisPublishEvent;
-import org.springframework.cloud.stream.annotation.EnableBinding;
-import org.springframework.integration.annotation.Filter;
-import org.springframework.messaging.Message;
+import org.icgc_argo.workflowingestionnode.model.NodeEvent;
+import org.icgc_argo.workflowingestionnode.rdpc.RdpcService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
-@EnableBinding(Channels.class)
-@Slf4j
-public class Config {
-    private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
+@Component
+public class FunctionDefinitions {
+  private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
 
-    @Filter(inputChannel = Channels.INPUT, outputChannel = Channels.OUTPUT)
-    public boolean analysisPublishEventToStartQueue(Message<AnalysisPublishEvent> message) {
-        log.debug("Msg recieved {}", message);
+  private final RdpcService rdpcService;
 
-        val analysisPublishEvent = message.getPayload();
+  @Autowired
+  public FunctionDefinitions(RdpcService rdpcService) {
+    this.rdpcService = rdpcService;
+  }
 
-        return analysisPublishEvent.getAnalysisType().toLowerCase().equals(ACCEPTED_ANALYSIS_TYPE);
-    }
+  @Bean
+  public Function<Flux<AnalysisPublishEvent>, Flux<NodeEvent>> processor() {
+    return analysisPublishEventFlux ->
+        analysisPublishEventFlux
+            .filter(
+                analysisPublishEvent ->
+                    analysisPublishEvent.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE))
+            .flatMap(
+                analysisPublishEvent ->
+                    rdpcService.createNodeEventFromAnalysis(analysisPublishEvent.getAnalysisId()))
+            .doOnError(Throwable::printStackTrace)
+            .log();
+  }
 }

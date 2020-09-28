@@ -12,7 +12,14 @@ spring:
   # Kafka broker config
   cloud.stream.kafka.binder.brokers: localhost:9092
 
-  # stream channel config
+  # stream function bindings
+  cloud.stream.function:
+    definitions: processor
+    bindings:
+      processor-in-0: inbound
+      processor-out-0: outbound
+
+  # stream bindings config
   cloud.stream.bindings:
       inbound:
         group: publish
@@ -21,3 +28,6 @@ spring:
       outbound:
         destination: start # rabbitmq exchange/topic to send messages to
         binder: rabbit
+
+rdpc:
+  url: https://api.rdpc-dev.cancercollaboratory.org/graphql
