@@ -25,6 +25,8 @@ import org.icgc_argo.workflow_graph_lib.workflow.client.RdpcClient;
 import org.icgc_argo.workflowingestionnode.model.AnalysisPublishEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -41,24 +43,28 @@ public class FunctionDefinitions {
   }
 
   @Bean
-  public Function<Flux<AnalysisPublishEvent>, Flux<GraphEvent>> processor() {
+  public Function<Flux<Message<AnalysisPublishEvent>>, Flux<Message<GraphEvent>>> processor() {
     return analysisPublishEventFlux ->
         analysisPublishEventFlux
+            .map(Message::getPayload)
             .filter(
                 analysisPublishEvent ->
                     analysisPublishEvent.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE))
             .doOnNext(
                 analysisPublishEvent -> log.info("Received publish event: " + analysisPublishEvent))
             .flatMap(
-                analysisPublishEvent -> {
-                  log.info("Mapping to GraphEvent");
-                  return rdpcClient.createGraphEventForAnalysis(
-                      analysisPublishEvent.getAnalysisId());
-                })
+                analysisPublishEvent ->
+                    rdpcClient.createGraphEventForAnalysis(analysisPublishEvent.getAnalysisId()))
             .doOnNext(graphEvent -> log.info("Converted to graph event" + graphEvent))
-            .doOnError(e -> log.info("An error occurred with mapping" + e))
-            .doOnEach(graphEventSignal -> log.info("Event signal" + graphEventSignal))
-            .doOnCancel(() -> log.info("I've been cancelled"))
+            .map(
+                graphEvent ->
+                    MessageBuilder.withPayload(graphEvent)
+                        .setHeader("contentType", "application/vnd.GraphEvent+avro")
+                        .build())
+            .doOnCancel(
+                () ->
+                    log.info(
+                        "I've been cancelled. One reason could be because Message conversion failed."))
             .log();
   }
 }
