@@ -7,8 +7,6 @@ services:
       - "2181:2181"
   broker:
     image: wurstmeister/kafka:2.13-2.6.0
-#    hostname: broker
-#    container_name: broker
     depends_on:
       - zookeeper
     ports:
@@ -21,10 +19,10 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   rabbitmq:
-    image: rabbitmq:3.8.8-management-alpine
+    image: bitnami/rabbitmq:3.8.9
     environment:
-      RABBITMQ_DEFAULT_USER: user
-      RABBITMQ_DEFAULT_PASS: pass
+      RABBITMQ_USERNAME: user
+      RABBITMQ_PASSWORD: pass
     ports:
       - 5672:5672
       - 15672:15672
