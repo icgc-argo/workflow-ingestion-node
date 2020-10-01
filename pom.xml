@@ -59,6 +59,13 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- LIB -->
+		<dependency>
+			<groupId>org.icgc_argo</groupId>
+			<artifactId>workflow-graph-lib</artifactId>
+			<version>1.2.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -67,7 +74,31 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>com.coveo</groupId>
+				<artifactId>fmt-maven-plugin</artifactId>
+				<version>2.9</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>format</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
+	<repositories>
+		<repository>
+			<id>dcc-release</id>
+			<name>artifacts.oicr.on.ca-releases</name>
+			<url>https://artifacts.oicr.on.ca/artifactory/dcc-release</url>
+		</repository>
+		<repository>
+			<id>dcc-snapshot</id>
+			<name>artifacts.oicr.on.ca-snapshots</name>
+			<url>https://artifacts.oicr.on.ca/artifactory/dcc-snapshot</url>
+		</repository>
+	</repositories>
 </project>
