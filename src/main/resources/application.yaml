@@ -27,10 +27,7 @@ spring:
       outbound:
         destination: start # rabbitmq exchange/topic to send messages to
         binder: rabbit
-
-
-    # misc configurations
-    # rabbit.bindings.outbound.producer.exchangeType: fanout
+    rabbit.bindings.outbound.producer.exchangeType: fanout
 
 rdpc:
   url: "http://localhost:8000"
