@@ -58,6 +58,22 @@ spec:
                 }
             }
         }
+        stage('Build Artifact & Publish') {
+             when {
+                anyOf {
+                    branch "master"
+                    branch "develop"
+                }
+            }
+            steps {
+                container('graal') {
+                    configFileProvider(
+                        [configFile(fileId: '894c5ba8-e7cf-4465-98d4-b213eeaa77ef', variable: 'MAVEN_SETTINGS')]) {
+                        sh './mvnw -s $MAVEN_SETTINGS clean package deploy'
+                    }
+                }
+            }
+        }
         stage('Build & Publish Edge') {
             when {
                 branch "develop"
