@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.icgc_argo</groupId>
-	<artifactId>workflow-ingestion-node</artifactId>
+	<artifactId>workflow-graph-ingest-node</artifactId>
 	<version>0.0.2-SNAPSHOT</version>
-	<name>workflow-ingestion-node</name>
-	<description>workflow-ingestion-node</description>
+	<name>workflow-graph-ingest-node</name>
+	<description>workflow-graph-ingest-node</description>
 
 	<properties>
 		<java.version>11</java.version>
