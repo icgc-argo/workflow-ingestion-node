@@ -17,7 +17,7 @@ ENV APP_UID 9999
 ENV APP_GID 9999
 
 
-COPY --from=builder /usr/src/app/target/workflow-ingestion-node-*.jar $APP_HOME/workflow-ingestion-node.jar
+COPY --from=builder /usr/src/app/target/workflow-graph-ingest-node-*.jar $APP_HOME/workflow-graph-ingest-node.jar
 
 RUN addgroup -S -g $APP_GID $APP_USER  \
     && adduser -S -u $APP_UID -G $APP_USER $APP_USER \
@@ -28,5 +28,5 @@ WORKDIR $APP_HOME
 
 USER $APP_UID
 
-CMD ["java", "-ea", "-jar", "/srv/workflow-ingestion-node.jar"]
+CMD ["java", "-ea", "-jar", "/srv/workflow-graph-ingest-node.jar"]
 EXPOSE 8080/tcp

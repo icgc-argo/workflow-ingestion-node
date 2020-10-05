@@ -18,15 +18,11 @@
 
 package org.icgc_argo.workflowingestionnode.model;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Data;
 
-@Getter
-@Setter
-@ToString
-@Builder
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AnalysisPublishEvent {
   private String analysisType;
   private String analysisId;

@@ -1,2 +1,2 @@
-# workflow-ingestion-node
-Workflow Ingestion Node
+# workflow-graph-ingest-node
+Workflow Graph Ingest Node
