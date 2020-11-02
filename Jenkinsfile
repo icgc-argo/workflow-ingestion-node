@@ -40,7 +40,6 @@ spec:
 """
         }
     }
-
     stages {
         stage('Prepare') {
             steps {
