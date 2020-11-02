@@ -13,9 +13,10 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-    - name: jdk
+    - name: graal
+      command: ['cat']
       tty: true
-      image: adoptopenjdk/openjdk11:jdk-11.0.7_10-alpine-slim
+      image: icgcargo/graalvm:java11-20.2.0-extras-1.0.0
     - name: dind-daemon
       image: docker:18.06-dind
       securityContext:
@@ -53,7 +54,7 @@ spec:
         }
         stage('Test') {
             steps {
-                container('jdk') {
+                container('graal') {
                     sh "./mvnw test"
                 }
             }
