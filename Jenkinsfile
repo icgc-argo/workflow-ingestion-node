@@ -7,13 +7,13 @@ def version = "UNKNOWN"
 pipeline {
     agent {
         kubernetes {
-            label 'wf-graph-ingest-node'
+            label 'wfg-ingest'
             yaml """
 apiVersion: v1
 kind: Pod
 spec:
   containers:
-    - name: graal
+    - name: graalvm
       command: ['cat']
       tty: true
       image: icgcargo/graalvm:java11-20.2.0-extras-1.0.0
@@ -53,7 +53,7 @@ spec:
         }
         stage('Test') {
             steps {
-                container('graal') {
+                container('graalvm') {
                     sh "./mvnw test"
                 }
             }
@@ -66,7 +66,7 @@ spec:
                 }
             }
             steps {
-                container('graal') {
+                container('graalvm') {
                     configFileProvider(
                         [configFile(fileId: '894c5ba8-e7cf-4465-98d4-b213eeaa77ef', variable: 'MAVEN_SETTINGS')]) {
                         sh './mvnw -s $MAVEN_SETTINGS clean package deploy'
