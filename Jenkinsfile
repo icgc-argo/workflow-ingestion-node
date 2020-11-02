@@ -1,4 +1,4 @@
-def dockerHubRepo = "icgcargo/workflow-graph-ingest-node"
+def dockerRepo = "ghcr.io/icgc-argo/workflow-graph-ingest-node"
 def gitHubRepo = "icgc-argo/workflow-graph-ingest-node"
 def commit = "UNKNOWN"
 def version = "UNKNOWN"
@@ -80,15 +80,15 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId:'argoDockerHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'docker login -u $USERNAME -p $PASSWORD'
+                    withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
                     }
 
                     // DNS error if --network is default
-                    sh "docker build --network=host . -t ${dockerHubRepo}:edge -t ${dockerHubRepo}:${commit}"
+                    sh "docker build --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${commit}"
 
-                    sh "docker push ${dockerHubRepo}:${commit}"
-                    sh "docker push ${dockerHubRepo}:edge"
+                    sh "docker push ${dockerRepo}:${commit}"
+                    sh "docker push ${dockerRepo}:edge"
                 }
             }
         }
@@ -98,15 +98,15 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId:'argoDockerHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'docker login -u $USERNAME -p $PASSWORD'
+                    withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
                     }
 
                     // DNS error if --network is default
-                    sh "docker build --network=host . -t ${dockerHubRepo}:latest -t ${dockerHubRepo}:${version}"
+                    sh "docker build --network=host . -t ${dockerRepo}:latest -t ${dockerRepo}:${version}"
 
-                    sh "docker push ${dockerHubRepo}:${version}"
-                    sh "docker push ${dockerHubRepo}:latest"
+                    sh "docker push ${dockerRepo}:${version}"
+                    sh "docker push ${dockerRepo}:latest"
                 }
             }
         }
