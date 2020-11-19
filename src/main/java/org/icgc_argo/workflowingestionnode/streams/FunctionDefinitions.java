@@ -46,10 +46,11 @@ public class FunctionDefinitions {
     this.rdpcClient = rdpcClient;
   }
 
-  // IntegrationFlow bean creates a Flux to Flux (defined by AnalysisPublishToGraphEvent interface)
-  // function bean named "publishToGraphEvent" for use with the function composition in app
-  // properties. It's done this way because a directly defined Flux to Flux function bean controls
-  // full stream behavior including errors, which have to be captured and DLQed manually.
+  // This IntegrationFlow bean creates a function bean named "publishToGraphEvent" defined by
+  // AnalysisPublishToGraphEvent interface for use with the function composition in app
+  // properties. It's done this way to use IntegrationFlows filter and fluxTransform because
+  // a directly defined Flux to Flux function bean controls full stream behavior including errors,
+  // which have to be captured and DLQed manually.
   @Bean
   public IntegrationFlow publishToGraphEventFlow() {
     return IntegrationFlows.from(
