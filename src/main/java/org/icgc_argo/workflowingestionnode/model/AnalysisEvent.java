@@ -21,8 +21,12 @@ package org.icgc_argo.workflowingestionnode.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
+// This data class is a sub class of AnalysisMessage in SONG server:
+// https://github.com/overture-stack/SONG/blob/develop/song-server/src/main/java/bio/overture/song/server/kafka/AnalysisMessage.java
+
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AnalysisPublishEvent {
+public class AnalysisEvent {
   private String analysisId;
+  private Analysis analysis;
 }

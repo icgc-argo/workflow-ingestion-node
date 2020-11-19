@@ -18,33 +18,32 @@
 
 package org.icgc_argo.workflowingestionnode.streams;
 
-import java.time.Duration;
+import static java.util.stream.Collectors.toUnmodifiableList;
+
+import java.util.Map;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.icgc_argo.workflow_graph_lib.schema.AnalysisFile;
 import org.icgc_argo.workflow_graph_lib.schema.GraphEvent;
-import org.icgc_argo.workflow_graph_lib.workflow.client.RdpcClient;
-import org.icgc_argo.workflowingestionnode.model.AnalysisPublishEvent;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.icgc_argo.workflowingestionnode.model.Analysis;
+import org.icgc_argo.workflowingestionnode.model.AnalysisEvent;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
+import org.springframework.integration.transformer.GenericTransformer;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
-import reactor.util.retry.Retry;
 
 @Component
 @Slf4j
 public class FunctionDefinitions {
-  private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
-
-  private RdpcClient rdpcClient;
-
-  @Autowired
-  public FunctionDefinitions(RdpcClient rdpcClient) {
-    this.rdpcClient = rdpcClient;
-  }
+  @Value("function.analysisToGraphEvent.acceptedAnalysisState")
+  private String ACCEPTED_ANALYSIS_STATE;
+  @Value("function.analysisToGraphEvent.acceptedAnalysisType")
+  private String ACCEPTED_ANALYSIS_TYPE;
 
   // This IntegrationFlow bean creates a function bean named "publishToGraphEvent" defined by
   // AnalysisPublishToGraphEvent interface for use with the function composition in app
@@ -52,11 +51,13 @@ public class FunctionDefinitions {
   // a directly defined Flux to Flux function bean controls full stream behavior including errors,
   // which have to be captured and DLQed manually.
   @Bean
-  public IntegrationFlow publishToGraphEventFlow() {
+  public IntegrationFlow analysisEventToGraphEventFlow() {
     return IntegrationFlows.from(
-            AnalysisPublishToGraphEvent.class, gateway -> gateway.beanName("publishToGraphEvent"))
-        .fluxTransform(publishToGraphEvent())
-        .<GraphEvent>filter(ge -> ge.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE))
+            AnalysisEventToGraphEvent.class, gateway -> gateway.beanName("analysisEventToGraphEvent"))
+        .transform(AnalysisEvent::getAnalysis)
+        .<Analysis>filter(a -> a.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE))
+        .<Analysis>filter(a -> a.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE))
+        .transform(analysisToGraphEvent())
         .logAndReply();
   }
 
@@ -70,24 +71,37 @@ public class FunctionDefinitions {
             .build();
   }
 
-  private Function<Flux<Message<AnalysisPublishEvent>>, Flux<GraphEvent>> publishToGraphEvent() {
-    // TODO - in #12 transfrom analysis in event directly to GraphEvent
-    return analysisPublishEventFlux ->
-        analysisPublishEventFlux
-            .map(Message::getPayload)
-            .doOnNext(
-                analysisPublishEvent -> log.info("Received publish event: " + analysisPublishEvent))
-            .flatMap(
-                analysisPublishEvent ->
-                    rdpcClient
-                        .createGraphEventForAnalysis(analysisPublishEvent.getAnalysisId())
-                        // retry+backoff to minimize race condition between event and indexing
-                        .retryWhen(Retry.backoff(15, Duration.ofSeconds(3)))
-                        .log())
-            .doOnNext(graphEvent -> log.info("Converted to graph event: " + graphEvent))
-            .log();
+  private GenericTransformer<Analysis, GraphEvent> analysisToGraphEvent() {
+    return a -> {
+      val donorIds =
+          a.getDonors().stream()
+              .map(Analysis.AnalysisDonor::getDonorId)
+              .collect(toUnmodifiableList());
+
+      val files =
+              a.getFiles().stream()
+                      .map(f -> new AnalysisFile(f.getDataType()))
+                      .collect(toUnmodifiableList());
+
+      String experimentalStrategy = "";
+      try {
+        val experiment = (Map<String, Object>) a.getExperiment();
+        experimentalStrategy = experiment.getOrDefault("experimental_strategy", "").toString();
+      } catch (Exception e) {
+        log.error("Experiment is not map", e);
+      }
+
+      return GraphEvent.newBuilder()
+          .setAnalysisId(a.getAnalysisId())
+          .setAnalysisState(a.getAnalysisState())
+          .setAnalysisType(a.getAnalysisType())
+          .setStudyId(a.getStudyId())
+          .setDonorIds(donorIds)
+          .setFiles(files)
+          .setExperimentalStrategy(experimentalStrategy)
+          .build();
+    };
   }
 
-  public interface AnalysisPublishToGraphEvent
-      extends Function<Message<AnalysisPublishEvent>, GraphEvent> {}
+  public interface AnalysisEventToGraphEvent extends Function<AnalysisEvent, GraphEvent> {}
 }
