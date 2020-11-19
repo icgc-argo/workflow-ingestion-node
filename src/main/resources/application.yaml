@@ -1,6 +1,10 @@
 server:
   port : 8082
 
+management:
+  endpoints.web.exposure.include: health
+  health.binders.enabled: true
+
 spring:
   # Rabbitmq config
   rabbitmq:
@@ -15,10 +19,10 @@ spring:
   # cloud stream config
   cloud.stream:
     function:
-      definitions: processor
+      definition: publishToGraphEvent|addAvroContentType # function composition, analogous to pipe operator
       bindings:
-        processor-in-0: inbound
-        processor-out-0: outbound
+        publishToGraphEvent|addAvroContentType-in-0: inbound
+        publishToGraphEvent|addAvroContentType-out-0: outbound
     bindings:
       inbound:
         group: publish
@@ -28,6 +32,9 @@ spring:
         destination: start # rabbitmq exchange/topic to send messages to
         binder: rabbit
     rabbit.bindings.outbound.producer.exchangeType: fanout
+    kafka.bindings.inbound.consumer:
+      enableDlq: true
+      dlqName: ingest-published-dlq
 
 rdpc:
   url: "http://localhost:8000"
