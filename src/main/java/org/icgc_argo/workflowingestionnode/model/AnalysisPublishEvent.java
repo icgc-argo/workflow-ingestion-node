@@ -24,6 +24,5 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AnalysisPublishEvent {
-  private String analysisType;
   private String analysisId;
 }
