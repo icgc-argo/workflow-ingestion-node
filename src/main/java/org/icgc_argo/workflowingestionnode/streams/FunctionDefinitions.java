@@ -59,7 +59,8 @@ public class FunctionDefinitions {
         .logAndReply();
   }
 
-  // Simple function bean that adds GraphEvent+avro contentType for message converter resolution
+  // Simple function bean that adds GraphEvent+avro contentType for message converter resolution.
+  // This is done separately from the IntegrationFlow because that can't resolve message converters.
   @Bean
   public Function<GraphEvent, Message<GraphEvent>> addAvroContentType() {
     return payload ->
