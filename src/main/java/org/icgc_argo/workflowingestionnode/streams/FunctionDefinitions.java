@@ -46,19 +46,10 @@ public class FunctionDefinitions {
     this.rdpcClient = rdpcClient;
   }
 
-  // Simple function bean that adds GraphEvent+avro contentType for message converter resolution
-  @Bean
-  public Function<GraphEvent, Message<GraphEvent>> addAvroContentType() {
-    return payload ->
-        MessageBuilder.withPayload(payload)
-            .setHeader("contentType", "application/vnd.GraphEvent+avro")
-            .build();
-  }
-
-  // This IntegrationFlow wraps the Flux to Flux function with spring integration, which creates
-  // a "publishToGraphEvent" function bean for use with the function composition in app properties.
-  // It's done this way because a directly defined Flux to Flux function bean controls full stream
-  // behavior including errors, which have to be captured and DLQed manually.
+  // IntegrationFlow bean creates a Flux to Flux (defined by AnalysisPublishToGraphEvent interface)
+  // function bean named "publishToGraphEvent" for use with the function composition in app
+  // properties. It's done this way because a directly defined Flux to Flux function bean controls
+  // full stream behavior including errors, which have to be captured and DLQed manually.
   @Bean
   public IntegrationFlow publishToGraphEventFlow() {
     return IntegrationFlows.from(
@@ -66,6 +57,15 @@ public class FunctionDefinitions {
         .fluxTransform(publishToGraphEvent())
         .<GraphEvent>filter(ge -> ge.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE))
         .logAndReply();
+  }
+
+  // Simple function bean that adds GraphEvent+avro contentType for message converter resolution
+  @Bean
+  public Function<GraphEvent, Message<GraphEvent>> addAvroContentType() {
+    return payload ->
+        MessageBuilder.withPayload(payload)
+            .setHeader("contentType", "application/vnd.GraphEvent+avro")
+            .build();
   }
 
   private Function<Flux<Message<AnalysisPublishEvent>>, Flux<GraphEvent>> publishToGraphEvent() {
@@ -80,7 +80,8 @@ public class FunctionDefinitions {
                     rdpcClient
                         .createGraphEventForAnalysis(analysisPublishEvent.getAnalysisId())
                         // retry+backoff to minimize race condition between event and indexing
-                        .retryWhen(Retry.backoff(15, Duration.ofSeconds(3))))
+                        .retryWhen(Retry.backoff(15, Duration.ofSeconds(3)))
+                        .log())
             .doOnNext(graphEvent -> log.info("Converted to graph event: " + graphEvent))
             .log();
   }
