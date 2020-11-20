@@ -28,8 +28,8 @@ import org.icgc_argo.workflow_graph_lib.schema.AnalysisFile;
 import org.icgc_argo.workflow_graph_lib.schema.GraphEvent;
 import org.icgc_argo.workflowingestionnode.model.Analysis;
 import org.icgc_argo.workflowingestionnode.model.AnalysisEvent;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.integration.core.GenericSelector;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.transformer.GenericTransformer;
@@ -40,10 +40,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class FunctionDefinitions {
-  @Value("function.analysisToGraphEvent.acceptedAnalysisState")
-  private String ACCEPTED_ANALYSIS_STATE;
-  @Value("function.analysisToGraphEvent.acceptedAnalysisType")
-  private String ACCEPTED_ANALYSIS_TYPE;
+  private static final String ACCEPTED_ANALYSIS_STATE = "PUBLISHED";
+  private static final  String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
 
   // This IntegrationFlow bean creates a function bean named "publishToGraphEvent" defined by
   // AnalysisPublishToGraphEvent interface for use with the function composition in app
@@ -54,10 +52,8 @@ public class FunctionDefinitions {
   public IntegrationFlow analysisEventToGraphEventFlow() {
     return IntegrationFlows.from(
             AnalysisEventToGraphEvent.class, gateway -> gateway.beanName("analysisEventToGraphEvent"))
-        .transform(AnalysisEvent::getAnalysis)
-        .<Analysis>filter(a -> a.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE))
-        .<Analysis>filter(a -> a.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE))
-        .transform(analysisToGraphEvent())
+        .filter(acceptedAnalysisSelector())
+        .transform(analysisEventToGraphEventTransformer())
         .logAndReply();
   }
 
@@ -68,11 +64,19 @@ public class FunctionDefinitions {
     return payload ->
         MessageBuilder.withPayload(payload)
             .setHeader("contentType", "application/vnd.GraphEvent+avro")
+            .setHeader("headers", Map.of())
             .build();
   }
 
-  private GenericTransformer<Analysis, GraphEvent> analysisToGraphEvent() {
-    return a -> {
+  private GenericSelector<AnalysisEvent> acceptedAnalysisSelector() {
+    return a -> a.getAnalysis().getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE) ||
+                        a.getAnalysis().getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
+  }
+
+  private GenericTransformer<AnalysisEvent, GraphEvent> analysisEventToGraphEventTransformer() {
+    return analysisEvent -> {
+      val a = analysisEvent.getAnalysis();
+
       val donorIds =
           a.getDonors().stream()
               .map(Analysis.AnalysisDonor::getDonorId)
@@ -83,14 +87,6 @@ public class FunctionDefinitions {
                       .map(f -> new AnalysisFile(f.getDataType()))
                       .collect(toUnmodifiableList());
 
-      String experimentalStrategy = "";
-      try {
-        val experiment = (Map<String, Object>) a.getExperiment();
-        experimentalStrategy = experiment.getOrDefault("experimental_strategy", "").toString();
-      } catch (Exception e) {
-        log.error("Experiment is not map", e);
-      }
-
       return GraphEvent.newBuilder()
           .setAnalysisId(a.getAnalysisId())
           .setAnalysisState(a.getAnalysisState())
@@ -98,7 +94,7 @@ public class FunctionDefinitions {
           .setStudyId(a.getStudyId())
           .setDonorIds(donorIds)
           .setFiles(files)
-          .setExperimentalStrategy(experimentalStrategy)
+          .setExperimentalStrategy(a.getExperiment().getExperimentalStrategy())
           .build();
     };
   }

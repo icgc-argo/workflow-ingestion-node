@@ -20,7 +20,9 @@ package org.icgc_argo.workflowingestionnode.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
-import java.util.Map;
+
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 
 @Data
@@ -32,7 +34,7 @@ public class Analysis {
   private String studyId;
   private List<AnalysisDonor> donors;
   private List<AnalysisFile> files;
-  private Map<String, Object> experiment;
+  private AnalysisExperiment experiment;
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -44,5 +46,12 @@ public class Analysis {
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class AnalysisFile {
     private String dataType;
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  public static class AnalysisExperiment {
+    private String experimentalStrategy;
   }
 }
