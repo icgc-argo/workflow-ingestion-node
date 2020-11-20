@@ -19,10 +19,9 @@
 package org.icgc_argo.workflowingestionnode.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.List;
-
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import java.util.List;
 import lombok.Data;
 
 @Data
@@ -31,6 +30,7 @@ public class Analysis {
   private String analysisId;
   private String analysisType;
   private String analysisState;
+  private String analysisVersion;
   private String studyId;
   private List<AnalysisDonor> donors;
   private List<AnalysisFile> files;

@@ -41,17 +41,18 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class FunctionDefinitions {
   private static final String ACCEPTED_ANALYSIS_STATE = "PUBLISHED";
-  private static final  String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
+  private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
 
   // This IntegrationFlow bean creates a function bean named "publishToGraphEvent" defined by
-  // AnalysisPublishToGraphEvent interface for use with the function composition in app
-  // properties. It's done this way to use IntegrationFlows filter and fluxTransform because
-  // a directly defined Flux to Flux function bean controls full stream behavior including errors,
-  // which have to be captured and DLQed manually.
+  // AnalysisEventToGraphEvent interface for use in function composition in app properties.
+  // IntegrationFlows filter+transform was chosen over Flux-to-Flux function bean with filter+map
+  // because in Spring cloud 3.x Flux-to-Flux function bean controls full stream behavior including
+  // errors, which have to be captured and DLQed manually.
   @Bean
   public IntegrationFlow analysisEventToGraphEventFlow() {
     return IntegrationFlows.from(
-            AnalysisEventToGraphEvent.class, gateway -> gateway.beanName("analysisEventToGraphEvent"))
+            AnalysisEventToGraphEvent.class,
+            gateway -> gateway.beanName("analysisEventToGraphEvent"))
         .filter(acceptedAnalysisSelector())
         .transform(analysisEventToGraphEventTransformer())
         .logAndReply();
@@ -64,13 +65,13 @@ public class FunctionDefinitions {
     return payload ->
         MessageBuilder.withPayload(payload)
             .setHeader("contentType", "application/vnd.GraphEvent+avro")
-            .setHeader("headers", Map.of())
             .build();
   }
 
   private GenericSelector<AnalysisEvent> acceptedAnalysisSelector() {
-    return a -> a.getAnalysis().getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE) ||
-                        a.getAnalysis().getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
+    return a ->
+        a.getAnalysis().getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
+            && a.getAnalysis().getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
   }
 
   private GenericTransformer<AnalysisEvent, GraphEvent> analysisEventToGraphEventTransformer() {
@@ -83,9 +84,9 @@ public class FunctionDefinitions {
               .collect(toUnmodifiableList());
 
       val files =
-              a.getFiles().stream()
-                      .map(f -> new AnalysisFile(f.getDataType()))
-                      .collect(toUnmodifiableList());
+          a.getFiles().stream()
+              .map(f -> new AnalysisFile(f.getDataType()))
+              .collect(toUnmodifiableList());
 
       return GraphEvent.newBuilder()
           .setAnalysisId(a.getAnalysisId())
