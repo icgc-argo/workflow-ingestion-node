@@ -19,6 +19,7 @@
 		<springframework.boot.version>2.3.3.RELEASE</springframework.boot.version>
 		<spring-cloud.version>3.0.8.RELEASE</spring-cloud.version>
 		<spring-cloud-schema-registry.version>1.0.8.RELEASE</spring-cloud-schema-registry.version>
+		<workflow-graph-lib.version>1.4.0-SNAPSHOT</workflow-graph-lib.version>
 	</properties>
 
 	<dependencies>
@@ -76,7 +77,7 @@
 		<dependency>
 			<groupId>org.icgc_argo</groupId>
 			<artifactId>workflow-graph-lib</artifactId>
-			<version>1.2.0</version>
+			<version>${workflow-graph-lib.version}</version>
 		</dependency>
 	</dependencies>
 

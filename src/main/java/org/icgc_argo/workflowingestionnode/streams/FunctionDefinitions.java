@@ -20,7 +20,7 @@ package org.icgc_argo.workflowingestionnode.streams;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
 
-import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -69,32 +69,28 @@ public class FunctionDefinitions {
   }
 
   private GenericSelector<AnalysisEvent> acceptedAnalysisSelector() {
-    return a ->
-        a.getAnalysis().getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
-            && a.getAnalysis().getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
+    return analysisEvent ->
+        analysisEvent.getAnalysis().getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
+            && analysisEvent.getAnalysis().getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
   }
 
   private GenericTransformer<AnalysisEvent, GraphEvent> analysisEventToGraphEventTransformer() {
     return analysisEvent -> {
       val a = analysisEvent.getAnalysis();
-
-      val donorIds =
-          a.getDonors().stream()
-              .map(Analysis.AnalysisDonor::getDonorId)
-              .collect(toUnmodifiableList());
-
-      val files =
-          a.getFiles().stream()
-              .map(f -> new AnalysisFile(f.getDataType()))
-              .collect(toUnmodifiableList());
-
       return GraphEvent.newBuilder()
+          .setId(UUID.randomUUID().toString())
           .setAnalysisId(a.getAnalysisId())
           .setAnalysisState(a.getAnalysisState())
           .setAnalysisType(a.getAnalysisType())
           .setStudyId(a.getStudyId())
-          .setDonorIds(donorIds)
-          .setFiles(files)
+          .setDonorIds(
+              a.getDonors().stream()
+                  .map(Analysis.AnalysisDonor::getDonorId)
+                  .collect(toUnmodifiableList()))
+          .setFiles(
+              a.getFiles().stream()
+                  .map(f -> new AnalysisFile(f.getDataType()))
+                  .collect(toUnmodifiableList()))
           .setExperimentalStrategy(a.getExperiment().getExperimentalStrategy())
           .build();
     };
