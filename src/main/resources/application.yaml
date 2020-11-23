@@ -1,7 +1,3 @@
-function.analysisToGraphEvent:
-    acceptedAnalysisType: "sequencing_experiment"
-    acceptedAnalysisState: "published"
-
 server:
   port : 8082
 
