@@ -18,45 +18,43 @@
 
 package org.icgc_argo.workflowingestionnode.streams;
 
-import java.time.Duration;
+import static java.util.stream.Collectors.toUnmodifiableList;
+
+import java.util.UUID;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.icgc_argo.workflow_graph_lib.schema.AnalysisFile;
 import org.icgc_argo.workflow_graph_lib.schema.GraphEvent;
-import org.icgc_argo.workflow_graph_lib.workflow.client.RdpcClient;
-import org.icgc_argo.workflowingestionnode.model.AnalysisPublishEvent;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.icgc_argo.workflowingestionnode.model.Analysis;
+import org.icgc_argo.workflowingestionnode.model.AnalysisEvent;
 import org.springframework.context.annotation.Bean;
+import org.springframework.integration.core.GenericSelector;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
+import org.springframework.integration.transformer.GenericTransformer;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
-import reactor.util.retry.Retry;
 
 @Component
 @Slf4j
 public class FunctionDefinitions {
+  private static final String ACCEPTED_ANALYSIS_STATE = "PUBLISHED";
   private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
 
-  private RdpcClient rdpcClient;
-
-  @Autowired
-  public FunctionDefinitions(RdpcClient rdpcClient) {
-    this.rdpcClient = rdpcClient;
-  }
-
   // This IntegrationFlow bean creates a function bean named "publishToGraphEvent" defined by
-  // AnalysisPublishToGraphEvent interface for use with the function composition in app
-  // properties. It's done this way to use IntegrationFlows filter and fluxTransform because
-  // a directly defined Flux to Flux function bean controls full stream behavior including errors,
-  // which have to be captured and DLQed manually.
+  // AnalysisEventToGraphEvent interface for use in function composition in app properties.
+  // IntegrationFlows filter+transform was chosen over Flux-to-Flux function bean with filter+map
+  // because in Spring cloud 3.x Flux-to-Flux function bean controls full stream behavior including
+  // errors, which have to be captured and DLQed manually.
   @Bean
-  public IntegrationFlow publishToGraphEventFlow() {
+  public IntegrationFlow analysisEventToGraphEventFlow() {
     return IntegrationFlows.from(
-            AnalysisPublishToGraphEvent.class, gateway -> gateway.beanName("publishToGraphEvent"))
-        .fluxTransform(publishToGraphEvent())
-        .<GraphEvent>filter(ge -> ge.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE))
+            AnalysisEventToGraphEvent.class,
+            gateway -> gateway.beanName("analysisEventToGraphEvent"))
+        .filter(acceptedAnalysisSelector())
+        .transform(analysisEventToGraphEventTransformer())
         .logAndReply();
   }
 
@@ -70,24 +68,33 @@ public class FunctionDefinitions {
             .build();
   }
 
-  private Function<Flux<Message<AnalysisPublishEvent>>, Flux<GraphEvent>> publishToGraphEvent() {
-    // TODO - in #12 transfrom analysis in event directly to GraphEvent
-    return analysisPublishEventFlux ->
-        analysisPublishEventFlux
-            .map(Message::getPayload)
-            .doOnNext(
-                analysisPublishEvent -> log.info("Received publish event: " + analysisPublishEvent))
-            .flatMap(
-                analysisPublishEvent ->
-                    rdpcClient
-                        .createGraphEventForAnalysis(analysisPublishEvent.getAnalysisId())
-                        // retry+backoff to minimize race condition between event and indexing
-                        .retryWhen(Retry.backoff(15, Duration.ofSeconds(3)))
-                        .log())
-            .doOnNext(graphEvent -> log.info("Converted to graph event: " + graphEvent))
-            .log();
+  private GenericSelector<AnalysisEvent> acceptedAnalysisSelector() {
+    return analysisEvent ->
+        analysisEvent.getAnalysis().getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
+            && analysisEvent.getAnalysis().getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
   }
 
-  public interface AnalysisPublishToGraphEvent
-      extends Function<Message<AnalysisPublishEvent>, GraphEvent> {}
+  private GenericTransformer<AnalysisEvent, GraphEvent> analysisEventToGraphEventTransformer() {
+    return analysisEvent -> {
+      val a = analysisEvent.getAnalysis();
+      return GraphEvent.newBuilder()
+          .setId(UUID.randomUUID().toString())
+          .setAnalysisId(a.getAnalysisId())
+          .setAnalysisState(a.getAnalysisState())
+          .setAnalysisType(a.getAnalysisType())
+          .setStudyId(a.getStudyId())
+          .setDonorIds(
+              a.getDonors().stream()
+                  .map(Analysis.AnalysisDonor::getDonorId)
+                  .collect(toUnmodifiableList()))
+          .setFiles(
+              a.getFiles().stream()
+                  .map(f -> new AnalysisFile(f.getDataType()))
+                  .collect(toUnmodifiableList()))
+          .setExperimentalStrategy(a.getExperiment().getExperimentalStrategy())
+          .build();
+    };
+  }
+
+  public interface AnalysisEventToGraphEvent extends Function<AnalysisEvent, GraphEvent> {}
 }

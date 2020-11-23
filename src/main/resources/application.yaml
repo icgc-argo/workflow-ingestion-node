@@ -19,10 +19,10 @@ spring:
   # cloud stream config
   cloud.stream:
     function:
-      definition: publishToGraphEvent|addAvroContentType # function composition, analogous to pipe operator
+      definition: analysisEventToGraphEvent|addAvroContentType # function composition, analogous to pipe operator
       bindings:
-        publishToGraphEvent|addAvroContentType-in-0: inbound
-        publishToGraphEvent|addAvroContentType-out-0: outbound
+        analysisEventToGraphEvent|addAvroContentType-in-0: inbound
+        analysisEventToGraphEvent|addAvroContentType-out-0: outbound
     bindings:
       inbound:
         group: publish
@@ -35,6 +35,3 @@ spring:
     kafka.bindings.inbound.consumer:
       enableDlq: true
       dlqName: ingest-published-dlq
-
-rdpc:
-  url: "http://localhost:8000"
