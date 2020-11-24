@@ -29,9 +29,11 @@ spring:
         destination: published # kafka topic to listen to
         binder: kafka
       outbound:
-        destination: start # rabbitmq exchange/topic to send messages to
         binder: rabbit
+        destination: start # rabbitmq exchange/topic to send messages to
+        producer.requiredGroups: start-default # default queues created on exchange (comma separated list)
     rabbit.bindings.outbound.producer.exchangeType: fanout
+    rabbit.bindings.outbound.producer.queueNameGroupOnly: true
     kafka.bindings.inbound.consumer:
       enableDlq: true
       dlqName: ingest-published-dlq
