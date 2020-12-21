@@ -71,7 +71,10 @@ public class FunctionDefinitions {
   private GenericSelector<AnalysisEvent> acceptedAnalysisSelector() {
     return analysisEvent ->
         analysisEvent.getAnalysis().getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
-            && analysisEvent.getAnalysis().getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
+            && analysisEvent
+                .getAnalysis()
+                .getAnalysisState()
+                .equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
   }
 
   private GenericTransformer<AnalysisEvent, GraphEvent> analysisEventToGraphEventTransformer() {
