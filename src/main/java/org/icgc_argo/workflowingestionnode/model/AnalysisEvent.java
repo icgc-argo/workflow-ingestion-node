@@ -16,27 +16,17 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc_argo.workflowingestionnode.streams;
+package org.icgc_argo.workflowingestionnode.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Data;
 
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.icgc_argo.workflowingestionnode.model.AnalysisPublishEvent;
-import org.springframework.cloud.stream.annotation.EnableBinding;
-import org.springframework.integration.annotation.Filter;
-import org.springframework.messaging.Message;
+// This data class is a sub class of AnalysisMessage in SONG server:
+// https://github.com/overture-stack/SONG/blob/develop/song-server/src/main/java/bio/overture/song/server/kafka/AnalysisMessage.java
 
-@EnableBinding(Channels.class)
-@Slf4j
-public class Config {
-    private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_alignment";
-
-    @Filter(inputChannel = Channels.INPUT, outputChannel = Channels.OUTPUT)
-    public boolean analysisPublishEventToStartQueue(Message<AnalysisPublishEvent> message) {
-        log.debug("Msg recieved {}", message);
-
-        val analysisPublishEvent = message.getPayload();
-
-        return analysisPublishEvent.getAnalysisType().toLowerCase().equals(ACCEPTED_ANALYSIS_TYPE);
-    }
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AnalysisEvent {
+  private String analysisId;
+  private Analysis analysis;
 }

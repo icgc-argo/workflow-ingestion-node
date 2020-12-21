@@ -16,20 +16,42 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc_argo.workflowingestionnode.streams;
+package org.icgc_argo.workflowingestionnode.model;
 
-import org.springframework.cloud.stream.annotation.Input;
-import org.springframework.cloud.stream.annotation.Output;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.SubscribableChannel;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import java.util.List;
+import lombok.Data;
 
-public interface Channels {
-    String INPUT = "inbound";
-    String OUTPUT = "outbound";
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Analysis {
+  private String analysisId;
+  private String analysisType;
+  private String analysisState;
+  private String analysisVersion;
+  private String studyId;
+  private List<AnalysisDonor> donors;
+  private List<AnalysisFile> files;
+  private AnalysisExperiment experiment;
 
-    @Input(INPUT)
-    SubscribableChannel analysisPublishEvents();
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class AnalysisDonor {
+    private String donorId;
+  }
 
-    @Output(OUTPUT)
-    MessageChannel startQueue();
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class AnalysisFile {
+    private String dataType;
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  public static class AnalysisExperiment {
+    private String experimentalStrategy;
+  }
 }

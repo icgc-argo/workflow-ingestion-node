@@ -2,27 +2,34 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.3.3.RELEASE</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<groupId>org.icgc_argo</groupId>
+		<artifactId>workflow-graph-parent-pom</artifactId>
+		<version>1.4.0</version>
 	</parent>
-	<groupId>org.icgc_argo</groupId>
-	<artifactId>workflow-ingestion-node</artifactId>
-	<version>0.0.1</version>
-	<name>workflow-ingestion-node</name>
-	<description>workflow-ingestion-node</description>
+
+	<artifactId>workflow-graph-ingest-node</artifactId>
+	<version>0.1.0</version>
+	<name>workflow-graph-ingest-node</name>
+	<description>workflow-graph-ingest-node</description>
 
 	<properties>
 		<java.version>11</java.version>
+		<springframework.boot.version>2.3.3.RELEASE</springframework.boot.version>
 		<spring-cloud.version>3.0.8.RELEASE</spring-cloud.version>
+		<spring-cloud-schema-registry.version>1.0.8.RELEASE</spring-cloud-schema-registry.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
 		<dependency>
@@ -35,6 +42,12 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-stream-rabbit</artifactId>
 			<version>${spring-cloud.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-schema-registry-client</artifactId>
+			<version>${spring-cloud-schema-registry.version}</version>
 		</dependency>
 
 		<dependency>
@@ -59,6 +72,11 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.icgc_argo</groupId>
+			<artifactId>workflow-graph-lib</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -66,8 +84,44 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>
+						org.icgc_argo.workflowingestionnode.WorkflowIngestionNodeApplication
+					</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.coveo</groupId>
+				<artifactId>fmt-maven-plugin</artifactId>
+				<version>2.9</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>format</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
 
+	<repositories>
+		<repository>
+			<id>dcc-release</id>
+			<name>artifacts.oicr.on.ca-releases</name>
+			<url>https://artifacts.oicr.on.ca/artifactory/dcc-release</url>
+		</repository>
+		<repository>
+			<id>dcc-snapshot</id>
+			<name>artifacts.oicr.on.ca-snapshots</name>
+			<url>https://artifacts.oicr.on.ca/artifactory/dcc-snapshot</url>
+		</repository>
+	</repositories>
 </project>
