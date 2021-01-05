@@ -50,14 +50,14 @@ public class FunctionDefinitions {
         return null; // returning null acknowledges and discards received message
       }
 
-      val ge = analysisEventToGraphEvent(analysis);
+      val ge = convertToGraphEvent(analysis);
       log.info("Sending graph event: {}", ge);
 
-      return graphEventToGraphEventMessage(ge);
+      return convertToGraphEventMessage(ge);
     };
   }
 
-  private Message<GraphEvent> graphEventToGraphEventMessage(GraphEvent graphEvent) {
+  private Message<GraphEvent> convertToGraphEventMessage(GraphEvent graphEvent) {
     return MessageBuilder.withPayload(graphEvent)
         .setHeader("contentType", "application/vnd.GraphEvent+avro")
         .build();
@@ -68,7 +68,7 @@ public class FunctionDefinitions {
         && analysis.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
   }
 
-  private GraphEvent analysisEventToGraphEvent(Analysis analysis) {
+  private GraphEvent convertToGraphEvent(Analysis analysis) {
     return GraphEvent.newBuilder()
         .setId(UUID.randomUUID().toString())
         .setAnalysisId(analysis.getAnalysisId())
