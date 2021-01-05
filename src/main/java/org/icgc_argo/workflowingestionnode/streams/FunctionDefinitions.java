@@ -63,24 +63,24 @@ public class FunctionDefinitions {
         .build();
   }
 
-  private Boolean isAcceptedAnalysis(Analysis analysisEvent) {
-    return analysisEvent.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
-        && analysisEvent.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
+  private Boolean isAcceptedAnalysis(Analysis analysis) {
+    return analysis.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
+        && analysis.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
   }
 
-  private GraphEvent analysisEventToGraphEvent(Analysis a) {
+  private GraphEvent analysisEventToGraphEvent(Analysis analysis) {
     return GraphEvent.newBuilder()
         .setId(UUID.randomUUID().toString())
-        .setAnalysisId(a.getAnalysisId())
-        .setAnalysisState(a.getAnalysisState())
-        .setAnalysisType(a.getAnalysisType())
-        .setStudyId(a.getStudyId())
-        .setDonorIds(a.getDonorIds())
+        .setAnalysisId(analysis.getAnalysisId())
+        .setAnalysisState(analysis.getAnalysisState())
+        .setAnalysisType(analysis.getAnalysisType())
+        .setStudyId(analysis.getStudyId())
+        .setDonorIds(analysis.getDonorIds())
         .setFiles(
-            a.getFiles().stream()
+            analysis.getFiles().stream()
                 .map(f -> new AnalysisFile(f.getDataType()))
                 .collect(toUnmodifiableList()))
-        .setExperimentalStrategy(a.getExperiment().getExperimentalStrategy())
+        .setExperimentalStrategy(analysis.getExperiment().getExperimentalStrategy())
         .build();
   }
 }
