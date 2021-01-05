@@ -29,10 +29,6 @@ import org.icgc_argo.workflow_graph_lib.schema.GraphEvent;
 import org.icgc_argo.workflowingestionnode.model.Analysis;
 import org.icgc_argo.workflowingestionnode.model.AnalysisEvent;
 import org.springframework.context.annotation.Bean;
-import org.springframework.integration.core.GenericSelector;
-import org.springframework.integration.dsl.IntegrationFlow;
-import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.transformer.GenericTransformer;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
@@ -43,61 +39,48 @@ public class FunctionDefinitions {
   private static final String ACCEPTED_ANALYSIS_STATE = "PUBLISHED";
   private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
 
-  // This IntegrationFlow bean creates a function bean named "publishToGraphEvent" defined by
-  // AnalysisEventToGraphEvent interface for use in function composition in app properties.
-  // IntegrationFlows filter+transform was chosen over Flux-to-Flux function bean with filter+map
-  // because in Spring cloud 3.x Flux-to-Flux function bean controls full stream behavior including
-  // errors, which have to be captured and DLQed manually.
   @Bean
-  public IntegrationFlow analysisEventToGraphEventFlow() {
-    return IntegrationFlows.from(
-            AnalysisEventToGraphEvent.class,
-            gateway -> gateway.beanName("analysisEventToGraphEvent"))
-        .filter(acceptedAnalysisSelector())
-        .transform(analysisEventToGraphEventTransformer())
-        .logAndReply();
-  }
+  public Function<Message<AnalysisEvent>, Message<GraphEvent>> processor() {
+    return analysisEventMessage -> {
+      val analysis = analysisEventMessage.getPayload().getAnalysis();
+      log.info("Received analysis: {}", analysis);
 
-  // Simple function bean that adds GraphEvent+avro contentType for message converter resolution.
-  // This is done separately from the IntegrationFlow because that can't resolve message converters.
-  @Bean
-  public Function<GraphEvent, Message<GraphEvent>> addAvroContentType() {
-    return payload ->
-        MessageBuilder.withPayload(payload)
-            .setHeader("contentType", "application/vnd.GraphEvent+avro")
-            .build();
-  }
+      if (!isAcceptedAnalysis(analysis)) {
+        log.info("Filtered (ignored) analysis: {}", analysis);
+        return null; // returning null acknowledges and discards received message
+      }
 
-  private GenericSelector<AnalysisEvent> acceptedAnalysisSelector() {
-    return analysisEvent ->
-        analysisEvent.getAnalysis().getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
-            && analysisEvent
-                .getAnalysis()
-                .getAnalysisState()
-                .equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
-  }
+      val ge = analysisEventToGraphEvent(analysis);
+      log.info("Sending graph event: {}", ge);
 
-  private GenericTransformer<AnalysisEvent, GraphEvent> analysisEventToGraphEventTransformer() {
-    return analysisEvent -> {
-      val a = analysisEvent.getAnalysis();
-      return GraphEvent.newBuilder()
-          .setId(UUID.randomUUID().toString())
-          .setAnalysisId(a.getAnalysisId())
-          .setAnalysisState(a.getAnalysisState())
-          .setAnalysisType(a.getAnalysisType())
-          .setStudyId(a.getStudyId())
-          .setDonorIds(
-              a.getDonors().stream()
-                  .map(Analysis.AnalysisDonor::getDonorId)
-                  .collect(toUnmodifiableList()))
-          .setFiles(
-              a.getFiles().stream()
-                  .map(f -> new AnalysisFile(f.getDataType()))
-                  .collect(toUnmodifiableList()))
-          .setExperimentalStrategy(a.getExperiment().getExperimentalStrategy())
-          .build();
+      return graphEventToGraphEventMessage(ge);
     };
   }
 
-  public interface AnalysisEventToGraphEvent extends Function<AnalysisEvent, GraphEvent> {}
+  private Message<GraphEvent> graphEventToGraphEventMessage(GraphEvent graphEvent) {
+    return MessageBuilder.withPayload(graphEvent)
+        .setHeader("contentType", "application/vnd.GraphEvent+avro")
+        .build();
+  }
+
+  private Boolean isAcceptedAnalysis(Analysis analysisEvent) {
+    return analysisEvent.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
+        && analysisEvent.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
+  }
+
+  private GraphEvent analysisEventToGraphEvent(Analysis a) {
+    return GraphEvent.newBuilder()
+        .setId(UUID.randomUUID().toString())
+        .setAnalysisId(a.getAnalysisId())
+        .setAnalysisState(a.getAnalysisState())
+        .setAnalysisType(a.getAnalysisType())
+        .setStudyId(a.getStudyId())
+        .setDonorIds(a.getDonorIds())
+        .setFiles(
+            a.getFiles().stream()
+                .map(f -> new AnalysisFile(f.getDataType()))
+                .collect(toUnmodifiableList()))
+        .setExperimentalStrategy(a.getExperiment().getExperimentalStrategy())
+        .build();
+  }
 }
