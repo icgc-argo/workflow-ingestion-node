@@ -18,6 +18,8 @@
 
 package org.icgc_argo.workflowingestionnode.model;
 
+import static java.util.stream.Collectors.toUnmodifiableList;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -28,13 +30,45 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Analysis {
   private String analysisId;
-  private String analysisType;
+  private AnalysisType analysisType;
   private String analysisState;
-  private String analysisVersion;
   private String studyId;
-  private List<AnalysisDonor> donors;
+  private List<AnalysisSample> analysisSamples;
   private List<AnalysisFile> files;
   private AnalysisExperiment experiment;
+
+  public String getAnalysisType() {
+    return analysisType.getName();
+  }
+
+  public List<String> getDonorIds() {
+    return analysisSamples.stream()
+        .flatMap(
+            analysisSample ->
+                analysisSample.getAnalysisSpecimens().stream()
+                    .flatMap(
+                        specimen -> specimen.getAnalysisDonors().stream().map(AnalysisDonor::getDonorId)))
+        .distinct()
+        .collect(toUnmodifiableList());
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class AnalysisType {
+    private String name;
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class AnalysisSample {
+    private List<AnalysisSpecimen> analysisSpecimens;
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class AnalysisSpecimen {
+    private List<AnalysisDonor> analysisDonors;
+  }
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
