@@ -33,7 +33,7 @@ public class Analysis {
   private AnalysisType analysisType;
   private String analysisState;
   private String studyId;
-  private List<AnalysisSample> analysisSamples;
+  private List<AnalysisSample> samples;
   private List<AnalysisFile> files;
   private AnalysisExperiment experiment;
 
@@ -42,12 +42,9 @@ public class Analysis {
   }
 
   public List<String> getDonorIds() {
-    return analysisSamples.stream()
-        .flatMap(
-            analysisSample ->
-                analysisSample.getAnalysisSpecimens().stream()
-                    .flatMap(
-                        specimen -> specimen.getAnalysisDonors().stream().map(AnalysisDonor::getDonorId)))
+    return samples.stream()
+        .map(AnalysisSample::getDonor)
+        .map(AnalysisDonor::getDonorId)
         .distinct()
         .collect(toUnmodifiableList());
   }
@@ -61,13 +58,7 @@ public class Analysis {
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class AnalysisSample {
-    private List<AnalysisSpecimen> analysisSpecimens;
-  }
-
-  @Data
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class AnalysisSpecimen {
-    private List<AnalysisDonor> analysisDonors;
+    private AnalysisDonor donor;
   }
 
   @Data
